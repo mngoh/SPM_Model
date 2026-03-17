@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Soccer Player Model — Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0e1117;
+      --surface: #161b22;
+      --border: #21262d;
+      --text: #e6edf3;
+      --muted: #7d8590;
+      --accent: #2f81f7;
+      --accent2: #3fb950;
+      --accent3: #f78166;
+      --accent4: #d2a8ff;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 28px 40px;
+    }
+
+    header h1 {
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+    }
+
+    header p {
+      color: var(--muted);
+      margin-top: 4px;
+      font-size: 13px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 40px;
+    }
+
+    /* ---- Section titles ---- */
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--muted);
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ---- Stat cards ---- */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 40px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+    }
+
+    .card .label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .card .value {
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .card .sub {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .accent  { color: var(--accent); }
+    .accent2 { color: var(--accent2); }
+    .accent3 { color: var(--accent3); }
+    .accent4 { color: var(--accent4); }
+
+    /* ---- Chart grid ---- */
+    .charts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+
+    .chart-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px;
+    }
+
+    .chart-box h3 {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .chart-box .chart-sub {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+
+    .chart-box canvas {
+      width: 100% !important;
+    }
+
+    /* ---- Table ---- */
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 40px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    thead tr {
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    th.num { text-align: right; }
+
+    td {
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+    tr:last-child td { border-bottom: none; }
+
+    tr.best td { background: rgba(47, 129, 247, 0.07); }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .badge-best { background: rgba(47,129,247,0.18); color: var(--accent); }
+    .badge-good { background: rgba(63,185,80,0.15); color: var(--accent2); }
+
+    /* ---- Findings ---- */
+    .findings {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 40px;
+    }
+
+    .finding {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 8px 8px 0;
+      padding: 16px 20px;
+    }
+
+    .finding.green  { border-left-color: var(--accent2); }
+    .finding.orange { border-left-color: var(--accent3); }
+    .finding.purple { border-left-color: var(--accent4); }
+
+    .finding h4 {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .finding p {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    /* ---- Pipeline ---- */
+    .pipeline {
+      display: flex;
+      gap: 0;
+      margin-bottom: 40px;
+      overflow-x: auto;
+    }
+
+    .step {
+      flex: 1;
+      min-width: 140px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-right: none;
+      padding: 16px;
+      position: relative;
+    }
+
+    .step:first-child { border-radius: 8px 0 0 8px; }
+    .step:last-child  { border-right: 1px solid var(--border); border-radius: 0 8px 8px 0; }
+
+    .step .step-num {
+      font-size: 11px;
+      color: var(--accent);
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .step h4 {
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .step p {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 20px 40px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    @media (max-width: 768px) {
+      .container { padding: 20px; }
+      .charts    { grid-template-columns: 1fr; }
+      .findings  { grid-template-columns: 1fr; }
+      .pipeline  { flex-direction: column; }
+      .step      { border-right: 1px solid var(--border); border-bottom: none; border-radius: 0; }
+      .step:first-child { border-radius: 8px 8px 0 0; }
+      .step:last-child  { border-bottom: 1px solid var(--border); border-radius: 0 0 8px 8px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Soccer Player Model</h1>
+  <p>Predicting non-penalty goals from player performance statistics — Martin Ngoh, Capstone</p>
+</header>
+
+<div class="container">
+
+  <!-- Dataset Stats -->
+  <div class="section-title">Dataset Overview</div>
+  <div class="cards">
+    <div class="card">
+      <div class="label">Total Players</div>
+      <div class="value accent">2,786</div>
+      <div class="sub">after deduplication</div>
+    </div>
+    <div class="card">
+      <div class="label">Raw Records</div>
+      <div class="value">21,863</div>
+      <div class="sub">before cleaning</div>
+    </div>
+    <div class="card">
+      <div class="label">Features</div>
+      <div class="value accent4">40</div>
+      <div class="sub">after engineering</div>
+    </div>
+    <div class="card">
+      <div class="label">Countries</div>
+      <div class="value">104</div>
+      <div class="sub">unique nationalities</div>
+    </div>
+    <div class="card">
+      <div class="label">Clubs</div>
+      <div class="value">98</div>
+      <div class="sub">unique clubs</div>
+    </div>
+    <div class="card">
+      <div class="label">Positions</div>
+      <div class="value">11</div>
+      <div class="sub">unique positions</div>
+    </div>
+    <div class="card">
+      <div class="label">Modelling Sample</div>
+      <div class="value accent2">829</div>
+      <div class="sub">players with &gt; 1 goal</div>
+    </div>
+    <div class="card">
+      <div class="label">Avg Age</div>
+      <div class="value">25.2</div>
+      <div class="sub">range 15 — 40</div>
+    </div>
+  </div>
+
+  <!-- Pipeline -->
+  <div class="section-title">Pipeline</div>
+  <div class="pipeline" style="margin-bottom:40px;">
+    <div class="step">
+      <div class="step-num">01</div>
+      <h4>Data Cleaning</h4>
+      <p>Deduplicate 21k records, rename 30+ columns, cap outliers at 99.9th / 5th percentile</p>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <h4>EDA</h4>
+      <p>129 scatter plots vs goals, 129x129 correlation heatmap, descriptive statistics</p>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <h4>Feature Engineering</h4>
+      <p>Log transform, one-hot encode categoricals, PCA at 0.95 variance threshold</p>
+    </div>
+    <div class="step">
+      <div class="step-num">04</div>
+      <h4>Modelling</h4>
+      <p>8 models, GridSearch tuning, 80/10/10 train/val/test split, KFold CV</p>
+    </div>
+    <div class="step">
+      <div class="step-num">05</div>
+      <h4>Evaluation</h4>
+      <p>MAE, MSE, RMSE, R² — best: Linear Regression R²=0.680</p>
+    </div>
+  </div>
+
+  <!-- Model Performance Charts -->
+  <div class="section-title">Model Performance</div>
+  <div class="charts">
+    <div class="chart-box">
+      <h3>R² Score</h3>
+      <div class="chart-sub">Higher is better — proportion of variance explained</div>
+      <canvas id="r2Chart" height="240"></canvas>
+    </div>
+    <div class="chart-box">
+      <h3>MAE — Mean Absolute Error</h3>
+      <div class="chart-sub">Lower is better — average prediction error in goals</div>
+      <canvas id="maeChart" height="240"></canvas>
+    </div>
+    <div class="chart-box">
+      <h3>RMSE — Root Mean Squared Error</h3>
+      <div class="chart-sub">Lower is better — penalises large errors more</div>
+      <canvas id="rmseChart" height="240"></canvas>
+    </div>
+    <div class="chart-box">
+      <h3>MSE — Mean Squared Error</h3>
+      <div class="chart-sub">Lower is better</div>
+      <canvas id="mseChart" height="240"></canvas>
+    </div>
+  </div>
+
+  <!-- Results Table -->
+  <div class="section-title">Results Table</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Model</th>
+          <th class="num">MAE</th>
+          <th class="num">MSE</th>
+          <th class="num">RMSE</th>
+          <th class="num">R²</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="best">
+          <td>Linear Regression</td>
+          <td class="num">0.198</td>
+          <td class="num">0.062</td>
+          <td class="num">0.249</td>
+          <td class="num">0.680</td>
+          <td><span class="badge badge-best">Best</span></td>
+        </tr>
+        <tr class="best">
+          <td>Elastic Net</td>
+          <td class="num">0.198</td>
+          <td class="num">0.062</td>
+          <td class="num">0.249</td>
+          <td class="num">0.680</td>
+          <td><span class="badge badge-best">Best</span></td>
+        </tr>
+        <tr>
+          <td>XGBoost</td>
+          <td class="num">0.229</td>
+          <td class="num">0.077</td>
+          <td class="num">0.277</td>
+          <td class="num">0.604</td>
+          <td><span class="badge badge-good">Good</span></td>
+        </tr>
+        <tr>
+          <td>Neural Network</td>
+          <td class="num">0.241</td>
+          <td class="num">0.085</td>
+          <td class="num">0.292</td>
+          <td class="num">0.560</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>CatBoost</td>
+          <td class="num">0.243</td>
+          <td class="num">0.090</td>
+          <td class="num">0.300</td>
+          <td class="num">0.535</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>LightGBM</td>
+          <td class="num">0.247</td>
+          <td class="num">0.088</td>
+          <td class="num">0.297</td>
+          <td class="num">0.545</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>Decision Tree</td>
+          <td class="num">0.276</td>
+          <td class="num">0.115</td>
+          <td class="num">0.339</td>
+          <td class="num">0.407</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>Random Forest</td>
+          <td class="num">0.281</td>
+          <td class="num">0.109</td>
+          <td class="num">0.330</td>
+          <td class="num">0.438</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Key Findings -->
+  <div class="section-title">Key Findings</div>
+  <div class="findings">
+    <div class="finding">
+      <h4>Linear models win</h4>
+      <p>Linear Regression and Elastic Net tied for best performance (R²=0.680, MAE=0.198), outperforming all tree-based and deep learning approaches on this dataset.</p>
+    </div>
+    <div class="finding green">
+      <h4>Strong predictive signal</h4>
+      <p>Player statistics explain 68% of variance in non-penalty goals scored. The model predicts within 0.198 goals on average.</p>
+    </div>
+    <div class="finding orange">
+      <h4>Ensemble models underperform</h4>
+      <p>Random Forest was the weakest model (R²=0.438). Tree-based ensembles may be overfitting or struggling with the log-transformed, PCA-reduced feature space.</p>
+    </div>
+    <div class="finding purple">
+      <h4>Neural network convergence</h4>
+      <p>5-layer network (50→40→30→20→10) with early stopping converged at epoch 28 of 1000. Test MSE=0.0854, suggesting diminishing returns over linear approaches.</p>
+    </div>
+    <div class="finding">
+      <h4>Data reduction</h4>
+      <p>Raw dataset reduced from 21,863 records to 2,786 unique players, then filtered to 829 players with more than 1 non-penalty goal for modelling.</p>
+    </div>
+    <div class="finding green">
+      <h4>Cross-validation stability</h4>
+      <p>Linear Regression 5-fold CV: Mean RMSE 0.279 ± 0.015 — low variance confirms the model generalises well and isn't overfitting.</p>
+    </div>
+  </div>
+
+  <!-- XGBoost Hyperparams -->
+  <div class="section-title">Best Hyperparameters</div>
+  <div class="cards" style="margin-bottom:40px;">
+    <div class="card">
+      <div class="label">Elastic Net</div>
+      <div class="value" style="font-size:15px;margin-top:8px;">alpha=0.001</div>
+      <div class="sub">l1_ratio=1</div>
+    </div>
+    <div class="card">
+      <div class="label">XGBoost</div>
+      <div class="value" style="font-size:15px;margin-top:8px;">depth=1</div>
+      <div class="sub">lr=0.5 · n=100 · λ=9</div>
+    </div>
+    <div class="card">
+      <div class="label">LightGBM</div>
+      <div class="value" style="font-size:15px;margin-top:8px;">depth=4</div>
+      <div class="sub">lr=0.1 · leaves=30 · n=200</div>
+    </div>
+    <div class="card">
+      <div class="label">CatBoost</div>
+      <div class="value" style="font-size:15px;margin-top:8px;">depth=2</div>
+      <div class="sub">lr=0.5 · iter=60 · λ=6</div>
+    </div>
+    <div class="card">
+      <div class="label">Random Forest</div>
+      <div class="value" style="font-size:15px;margin-top:8px;">depth=90</div>
+      <div class="sub">features=12 · n=100</div>
+    </div>
+    <div class="card">
+      <div class="label">Decision Tree</div>
+      <div class="value" style="font-size:15px;margin-top:8px;">depth=4</div>
+      <div class="sub">criterion=poisson · leaf=10</div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<footer>
+  Soccer Player Model &mdash; Martin Ngoh Capstone &mdash; github.com/mngoh/SPM_Model
+</footer>
+
+<script>
+  const models = [
+    'Linear Reg.',
+    'Elastic Net',
+    'XGBoost',
+    'Neural Net',
+    'CatBoost',
+    'LightGBM',
+    'Decision Tree',
+    'Random Forest',
+  ];
+
+  const r2   = [0.680, 0.680, 0.604, 0.560, 0.535, 0.545, 0.407, 0.438];
+  const mae  = [0.198, 0.198, 0.229, 0.241, 0.243, 0.247, 0.276, 0.281];
+  const mse  = [0.062, 0.062, 0.077, 0.085, 0.090, 0.088, 0.115, 0.109];
+  const rmse = [0.249, 0.249, 0.277, 0.292, 0.300, 0.297, 0.339, 0.330];
+
+  const palette = [
+    '#2f81f7','#2f81f7','#3fb950','#f78166','#d2a8ff','#79c0ff','#e3b341','#ff7b72'
+  ];
+
+  const defaults = {
+    type: 'bar',
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#161b22',
+          borderColor: '#21262d',
+          borderWidth: 1,
+          titleColor: '#e6edf3',
+          bodyColor: '#7d8590',
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: '#21262d' },
+          ticks: { color: '#7d8590', font: { size: 11 } }
+        },
+        y: {
+          grid: { display: false },
+          ticks: { color: '#e6edf3', font: { size: 12 } }
+        }
+      }
+    }
+  };
+
+  function makeChart(id, data, label, reversed) {
+    const sorted = models
+      .map((m, i) => ({ m, v: data[i], c: palette[i] }))
+      .sort((a, b) => reversed ? a.v - b.v : b.v - a.v);
+
+    new Chart(document.getElementById(id), {
+      ...defaults,
+      data: {
+        labels: sorted.map(d => d.m),
+        datasets: [{
+          label,
+          data: sorted.map(d => d.v),
+          backgroundColor: sorted.map(d => d.c),
+          borderRadius: 4,
+          borderSkipped: false,
+        }]
+      }
+    });
+  }
+
+  makeChart('r2Chart',   r2,   'R²',   false);
+  makeChart('maeChart',  mae,  'MAE',  true);
+  makeChart('rmseChart', rmse, 'RMSE', true);
+  makeChart('mseChart',  mse,  'MSE',  true);
+</script>
+
+</body>
+</html>
